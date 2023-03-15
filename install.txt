@@ -1,0 +1,23 @@
+sudo modprobe w1-gpio
+sudo modprobe w1-therm
+cd /sys/bus/w1/devices
+ls
+cd +++++++++++++++ (15digits)
+cat w1_slave
+
+Arduino IDE:
+install ArduinoJson 5.13.1
+http://arduino.esp8266.com/stable/package_esp8266com_index.json
+https://github.com/FirebaseExtended/firebase-arduino
+
+extract zip to arduino
+
+update fingerprint in Documents\Arduino\libraries\firebase-arduino-master\src\FirebaseHttpClient.h
+get fingerprint here https://www.grc.com/fingerprints.htm
+your fingerprint link is https://xxxxxxxxxxxx.firebaseio.com/
+
+04:E0:BD:B0:F8:63:22:3C:3A:19:7D:92:B6:79:2A:44:BF:77:FC:DA 
+paste it to firebasehttpclient.h
+
+install one wire by jim Studt
+DallasTemperature by Miles Burton
