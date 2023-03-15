@@ -45,14 +45,20 @@ db = firebase.database()
 
 while True:
     try:
-        delaaay = datetime.now().strftime('%I:%M %p')
-        request = requests.get(url, timeout = timeout)
+        timetoday = datetime.now().strftime('%x') #date today
+        delaaay = datetime.now().strftime('%H:%M %p') #call real-time hour
+        request = requests.get(url, timeout = timeout) #check if there is connection
+        combinedString = timetoday + " " + delaaay
+
+#Calling data from the firebase then convert it to array  
         heaterInput = db.child("FarmCycle").child("CoolingSystemTank").get("")
         heaterData = heaterInput.val()
         heateroutput = [heaterData[j] for j in heaterData]
+
         tankTempInput = db.child("FarmCycle").child("tTankTemp").get("")
         tankTempData = tankTempInput.val()
         tankTempOutput = [tankTempData[j] for j in tankTempData]
+        
         waterLevelInput = db.child("FarmCycle").child("WaterLevel").get("")
         waterLevelData = waterLevelInput.val()
         waterLeveloutput = [waterLevelData[j] for j in waterLevelData]
@@ -61,143 +67,163 @@ while True:
         isPumpInOn = heateroutput[1]
         isPumpOutOn = heateroutput[2]
         isTankHeaterOn = heateroutput[3]
+
         tankMax = tankTempOutput[0]
         tankMin = tankTempOutput[1]
         tankTemp = tankTempOutput[2]
+        
         waterLevel = int(waterLeveloutput[0])
+#Calling data from the firebase then convert it to array  
 
-# Auto Controller of Heater
+#Auto Controller of Heater
         if isTankHeaterOn == True:
             isTankHeaterOnStatus = True
             isManualHeaterOnTankStatus = False
             isManualHeaterOnTank = False
-            data = {
-            "status" : isManualHeaterOnTankStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(data)
-            data = {
-            "status" : isTankHeaterOnStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Heater System").update(data)
-            data = {
+            ManualHeater = {
             "isManualHeaterOnTank" : isManualHeaterOnTank,
             }
+            ManualHeaterStatus = {
+            "status" : isManualHeaterOnTankStatus,
+            "time" : combinedString
+            }
+            TankHeaterStatus = {
+            "status" : isTankHeaterOnStatus,
+            "time" : combinedString
+            }
             db.child("FarmCycle").child("CoolingSystemTank").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Heater System").update(data)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Heater").push(data)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Heater System").push(data)
+
             if tankTemp <= tankMin:
                 GPIO.output(relayHeater, GPIO.LOW)
                 print("The Heater is turned on")
             elif tankTemp >= tankMax:
                 GPIO.output(relayHeater, GPIO.HIGH)
                 print("The Heater is turned off")
+
         elif isTankHeaterOn == False:
             isTankHeaterOn = ""
             isTankHeaterOnStatus = False
-            data = {
-            "status" : isTankHeaterOnStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Heater System").update(data)
-            data = {
+            TankHeater = {
             "isTankHeaterOn" : isTankHeaterOn,
             }
-            db.child("FarmCycle").child("CoolingSystemTank").update(data)
-            print("The auto heater is offline")
+            TankHeaterStatus = {
+            "status" : isTankHeaterOnStatus,
+            "time" : combinedString
+            }
+            db.child("FarmCycle").child("CoolingSystemTank").update(TankHeater)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Heater System").update(TankHeaterStatus)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Heater System").push(TankHeaterStatus)
             
+            print("The auto heater is offline")            
             
-# Auto Controller of Heater
+#Auto Controller of Heater
 
-# Manual Controller of Heater
+#Manual Controller of Heater
         elif isManualHeaterOnTank == True:
             isManualHeaterOnTankStatus = True
             isTankHeaterOnStatus = False
-            data = {
+            ManualHeaterStatus = {
             "status" : isManualHeaterOnTankStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(data)
-            data = {
+            TankHeaterStatus = {
             "status" : isTankHeaterOnStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Heater System").update(data)
-            isManualHeaterOnTankStatus = True
-            data = {
-            "status" : isManualHeaterOnTankStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Heater System").update(ManualHeaterStatus)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(TankHeaterStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Heater System").push(ManualHeaterStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Heater").push(TankHeaterStatus)
+
             GPIO.output(relayHeater, GPIO.LOW)
             print("The Heater is turned on")
+
         elif isManualHeaterOnTank == False:
             isManualHeaterOnTankStatus = False
-            data = {
-            "status" : isManualHeaterOnTankStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(data)
-            GPIO.output(relayHeater, GPIO.HIGH)
-            print("The Heater is turned off")
             isManualHeaterOnTank = ""
             data = {
             "isManualHeaterOnTank" : isManualHeaterOnTank
             }
+            ManualHeaterStatus = {
+            "status" : isManualHeaterOnTankStatus,
+            "time" : combinedString
+            }
             db.child("FarmCycle").child("CoolingSystemTank").update(data)
-# Manual Controller of Heater
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Heater").update(ManualHeaterStatus)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Heater").push(ManualHeaterStatus)
 
-# Manual Controller of Pump In
+            GPIO.output(relayHeater, GPIO.HIGH)
+            print("The Heater is turned off")
+               
+#Manual Controller of Heater
+
+#Manual Controller of Pump In
         elif isPumpInOn == True:
             isPumpInOnStatus = True
             data = {
             "status" : isPumpInOnStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
             db.child("FarmCycle").child("ActivityLog").child("Temp").child("Pump In").update(data)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Pump In").push(data)
+
             GPIO.output(relayPumpIn, GPIO.LOW)
             print("The Pump In is turned on")
         elif isPumpInOn == False:
             isPumpInOnStatus = False
-            data = {
-            "status" : isPumpInOnStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Pump In").update(data)
-            GPIO.output(relayPumpIn, GPIO.HIGH)
-            print("The Pump In is turned off")
             isPumpInOn = ""
             data = {
             "isPumpInOn" : isPumpInOn
             }
+            PumpInData = {
+            "status" : isPumpInOnStatus,
+            "time" : combinedString
+            }
             db.child("FarmCycle").child("CoolingSystemTank").update(data)
-# Manual Controller of Pump In
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Pump In").update(PumpInData)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Pump In").push(PumpInData)
+            
+            GPIO.output(relayPumpIn, GPIO.HIGH)
+            print("The Pump In is turned off")
+#Manual Controller of Pump In
 
+#Manual Controller of Pump Out
         elif isPumpOutOn == True:
             isPumpOutOnStatus = True
             data = {
             "status" : isPumpOutOnStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
             db.child("FarmCycle").child("ActivityLog").child("Temp").child("Pump Out").update(data)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Pump Out").push(data)
+            
             GPIO.output(relayPumpOut, GPIO.LOW)
             print("The PumpOut is turned on")
+
         elif isPumpOutOn == False:
             isPumpOutOnStatus = False
-            data = {
-            "status" : isPumpOutOnStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Pump Out").update(data)
-            GPIO.output(relayPumpOut, GPIO.HIGH)
-            print("The PumpOut is turned off")
             isPumpOutOn = ""
             data = {
             "isPumpOutOn" : isPumpOutOn
             }
+            PumpOutData = {
+            "status" : isPumpOutOnStatus,
+            "time" : combinedString
+            }
             db.child("FarmCycle").child("CoolingSystemTank").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Pump Out").update(PumpOutData)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Pump Out").push(PumpOutData)
+            GPIO.output(relayPumpOut, GPIO.HIGH)
+            print("The PumpOut is turned off")
+            
         else:
             print("waitingTankSystem")
             time.sleep(1)
+#Manual Controller of Pump Out
     except:
         print("connectingTankSystem")
         restart()

@@ -39,12 +39,16 @@ db = firebase.database()
 time.sleep(2)
 while True:
     try:
-        delaaay = datetime.now().strftime('%I:%M %p') #call real-time hour
+        timetoday = datetime.now().strftime('%x') #date today
+        delaaay = datetime.now().strftime('%H:%M %p') #call real-time hour
         request = requests.get(url, timeout = timeout) #check if there is connection
+        combinedString = timetoday + " " + delaaay
+        
 #Calling data from the firebase then convert it to array    
         cageControlInput = db.child("FarmCycle").child("CoolingSystemCage").get("")
         cageControlData = cageControlInput.val()
         cageControloutput = [cageControlData[j] for j in cageControlData]
+        
         cageTempInput = db.child("FarmCycle").child("tCageTemp").get("")
         cageTempData = cageTempInput.val()
         cageTempOutput = [cageTempData[j] for j in cageTempData]
@@ -62,39 +66,43 @@ while True:
             cagelightAutoStatus = True
             cagelightManualStatus = False
             cageLightManual = ""
-            data = {
+            LightManual = {
             "isLightManualOn" : cageLightManual
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
-            data = {
+            LightAutoStatus = {
             "status" : cagelightAutoStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Light").update(data)
-            data = {
+            LightManualStatus = {
             "status" : cagelightManualStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Light").update(data)
-            
+            db.child("FarmCycle").child("CoolingSystemCage").update(LightManual)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Light").update(LightAutoStatus)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Light").update(LightManualStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Light").push(LightAutoStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Light").push(LightManualStatus)
+
             if cageTemp >= cageMax:
                 print("The Cage light Auto is turned off")
                 GPIO.output(relayLight, GPIO.HIGH)
             elif cageTemp <= cageMin:
                 GPIO.output(relayLight, GPIO.LOW)
                 print("The Cage light Auto is turned on")
+
         elif cageLightAuto == False:
             cagelightAutoStatus = False
             cageLightAuto = ""
-            data = {
+            LightAuto = {
             "isCageLightOn" : cageLightAuto
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
-            data = {
+            LightAutoStatus = {
             "status" : cagelightAutoStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Light").update(data)
+            db.child("FarmCycle").child("CoolingSystemCage").update(LightAuto)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Light").update(LightAutoStatus)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Light").push(LightAutoStatus)
             GPIO.output(relayLight, GPIO.HIGH)
 #Cage Light Auto
             
@@ -106,33 +114,41 @@ while True:
             data = {
             "isCageLightOn" : cageLightAuto
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
+            
             data = {
             "status" : cagelightAutoStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Light").update(data)
+            
             data = {
             "status" : cagelightManualStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Light").update(data)
-            GPIO.output(relayLight, GPIO.LOW)  
-            print("The Cage light is turned on")
-        elif cageLightManual == False:
-            cagelightManualStatus = False
-            data = {
-            "status" : cagelightManualStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Light").update(data)
-            GPIO.output(relayLight, GPIO.HIGH)
-            print("The Cage light is turned off")
-            cageLightManual = ""
-            data = {
-            "isLightManualOn" : cageLightManual
+            "time" : combinedString
             }
             db.child("FarmCycle").child("CoolingSystemCage").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Light").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Light").update(data)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Light").update(data)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Light").update(data)
+
+            GPIO.output(relayLight, GPIO.LOW)  
+            print("The Cage light is turned on")
+
+        elif cageLightManual == False:
+            cagelightManualStatus = False
+            cageLightManual = ""
+            LightManual = {
+            "isLightManualOn" : cageLightManual
+            }
+            LightManualStatus = {
+            "status" : cagelightManualStatus,
+            "time" : combinedString
+            }
+            db.child("FarmCycle").child("CoolingSystemCage").update(LightManual)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Light").update(LightManualStatus)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Light").push(LightManualStatus)
+
+            GPIO.output(relayLight, GPIO.HIGH)
+            print("The Cage light is turned off")
         else:
             print("waitingCageLight")
             time.sleep(1)

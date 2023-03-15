@@ -41,27 +41,41 @@ db = firebase.database()
 #FIREBASE
 while True:
     try:
-        request = requests.get(url, timeout = timeout)
+        timetoday = datetime.now().strftime('%x') #date today
+        delaaay = datetime.now().strftime('%H:%M %p') #call real-time hour
+        request = requests.get(url, timeout = timeout) #check if there is connection
+        combinedString = timetoday + " " + delaaay
+
+#Calling data from the firebase then convert it to array   
         feedFish = db.child("FarmCycle").child("FeedFish").get("")
-        fishquanty = db.child("FarmCycle").child("FishQuantity").get("")
         fishData = feedFish.val()
-        daysFishData = fishquanty.val()
-        delaaay = datetime.now().strftime('%H:%M %p')
-        delaaay2 = datetime.now().strftime('%I:%M %p')
         fishOutput = [fishData[j] for j in fishData]
+
+        fishquanty = db.child("FarmCycle").child("FishQuantity").get("")
+        daysFishData = fishquanty.val()
         fishquantityOutput = [daysFishData[j] for j in daysFishData]
+        
+        fishQuantity = int(fishquantityOutput[0])
         FirstFeedTime = fishOutput[0]
         ManualFeed = fishOutput[2]
         SecondFeedTime = fishOutput[3]
-        fishQuantity = int(fishquantityOutput[0])
+#Calling data from the firebase then convert it to array   
 
+#Manual Feed
         if ManualFeed == True:
             status = True
+            ManualFeed = False
             data = {
-            "time" : delaaay2,
+            "ManualFeed" : ManualFeed
+            }
+            mFeed = {
+            "time" : combinedString,
             "status" : status
             }
-            db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Manual Feed").update(data)
+            db.child("FarmCycle").child("FeedFish").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Manual Feed").update(mFeed)
+            db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Manual Feed").push(mFeed)
+
             GPIO.output(relayFishFeederOpen, GPIO.HIGH)
             GPIO.output(relayFishFeederClose, GPIO.LOW)
             print("Fish feeder is opening")
@@ -70,33 +84,35 @@ while True:
             GPIO.output(relayFishFeederOpen, GPIO.LOW)
             time.sleep(6)
             print("Fish feeder is closing")
-            ManualFeed = False #set manual feed to false by updating firebase
-            data = {
-            "ManualFeed" : ManualFeed
-            }
-            #firebase name
-            db.child("FarmCycle").child("FeedFish").update(data)
+                    
             status = False
-            data = {
-            "time" : delaaay2,
+            mFeed = {
+            "time" : combinedString,
             "status" : status
             }
-            db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Manual Feed").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Manual Feed").update(mFeed)
+            db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Manual Feed").push(mFeed)
+#Manual Feed
+ 
+#Auto Feed        
         elif FirstFeedTime == delaaay:
             if fishQuantity == 0:
                 status = False
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish First Feeding").update(data)
+                #db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish First Feeding").push(data)
+            
             elif fishQuantity <=5:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish First Feeding").push(data)
                 GPIO.output(relayFishFeederOpen, GPIO.HIGH)
                 GPIO.output(relayFishFeederClose, GPIO.LOW)
                 print("Fish feeder is opening")
@@ -105,13 +121,16 @@ while True:
                 GPIO.output(relayFishFeederClose, GPIO.HIGH)
                 print("Fish feeder is closing")
                 time.sleep(60)
+
             elif fishQuantity >=6:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish First Feeding").push(data)
+                
                 GPIO.output(relayFishFeederOpen, GPIO.HIGH)
                 GPIO.output(relayFishFeederClose, GPIO.LOW)
                 print("Fish feeder is opening")
@@ -120,21 +139,26 @@ while True:
                 GPIO.output(relayFishFeederClose, GPIO.HIGH)
                 print("Fish feeder is closing")
                 time.sleep(60)
+
         elif SecondFeedTime == delaaay:
             if fishQuantity == 0:
                 status = False
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Second Feeding").update(data)
+                #db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Second Feeding").push(data)
+
             elif fishQuantity <=5:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Second Feeding").push(data)
+                
                 GPIO.output(relayFishFeederOpen, GPIO.HIGH)
                 GPIO.output(relayFishFeederClose, GPIO.LOW)
                 print("Fish feeder is opening")
@@ -143,13 +167,16 @@ while True:
                 GPIO.output(relayFishFeederClose, GPIO.HIGH)
                 print("Fish feeder is closing")
                 time.sleep(60)
+
             elif fishQuantity >=6:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Second Feeding").push(data)
+                
                 GPIO.output(relayFishFeederOpen, GPIO.HIGH)
                 GPIO.output(relayFishFeederClose, GPIO.LOW)
                 print("Fish feeder is opening")
@@ -161,6 +188,7 @@ while True:
         else:
             print("waitingFishFeeder")
             time.sleep(1)
+#Auto Feed
     except:
         print("connectingFishFeeder")
         restart()

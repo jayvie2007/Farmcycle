@@ -39,12 +39,16 @@ db = firebase.database()
 time.sleep(3)
 while True:
     try:
-        delaaay = datetime.now().strftime('%I:%M %p')
-        request = requests.get(url, timeout = timeout)
-    #Calling data from the firebase then convert it to array    
+        timetoday = datetime.now().strftime('%x') #date today
+        delaaay = datetime.now().strftime('%H:%M %p') #call real-time hour
+        request = requests.get(url, timeout = timeout) #check if the raspberry has connection
+        combinedString = timetoday + " " + delaaay
+
+#Calling data from the firebase then convert it to array    
         cageControlInput = db.child("FarmCycle").child("CoolingSystemCage").get("")
         cageControlData = cageControlInput.val()
         cageControloutput = [cageControlData[j] for j in cageControlData]
+
         cageTempInput = db.child("FarmCycle").child("tCageTemp").get("")
         cageTempData = cageTempInput.val()
         cageTempOutput = [cageTempData[j] for j in cageTempData]
@@ -55,28 +59,29 @@ while True:
         cageMax = int(cageTempOutput[0])
         cageMin = int(cageTempOutput[1])
         cageTemp = cageTempOutput[2]
-    #Calling data from the firebase then convert it to array
+#Calling data from the firebase then convert it to array
         
-            
-    #Cage Fan Auto
+#Cage Fan Auto
         if cageFanAuto == True:
             CageFanAutoStatus = True
             CageFanManualStatus = False
-            cageFanManual = False #set auto cage light to false by updating firebase
-            data = {
+            cageFanManual = False
+            FanManual = {
             "isManualFanOnCage" : cageFanManual 
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
-            data = {
+            FanAutoStatus = {
             "status" : CageFanAutoStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(data)
-            data = {
+            FanManualStatus = {
             "status" : CageFanManualStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(data)      
+            db.child("FarmCycle").child("CoolingSystemCage").update(FanManual)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManualStatus)      
             
             if cageTemp <= cageMin:
                 GPIO.output(relayFan, GPIO.HIGH)
@@ -84,59 +89,68 @@ while True:
             elif cageTemp >= cageMax:
                 GPIO.output(relayFan, GPIO.LOW)
                 print("The Cage fan auto is turned on")
+
         elif cageFanAuto == False:
             CageFanAutoStatus = False
             cageFanAuto = ""
-            data = {
+            FanAuto = {
             "isCageFanOn" : cageFanAuto,
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
-            data = {
+            FanAutoStatus = {
             "status" : CageFanAutoStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(data)
+            db.child("FarmCycle").child("CoolingSystemCage").update(FanAuto)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Fan").push(FanManualStatus)
             GPIO.output(relayFan, GPIO.HIGH)
-    #Cage Fan Auto
+#Cage Fan Auto
 
-    #Cage Fan Manual
+#Cage Fan Manual
         elif cageFanManual == True:
             CageFanAutoStatus = False
             CageFanManualStatus = True
-            cageFanAuto = "" #set auto cage light to false by updating firebase
-            data = {
+            cageFanAuto = ""
+            FanAutoStatus = {
             "status" : CageFanAutoStatus,
-            "time" : delaaay
+            "time" : combinedString
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(data)
-            data = {
+            FanManualStatus = {
             "status" : CageFanManualStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(data)   
-            data = {
+            "time" : combinedString
+            }  
+            FanAuto = {
             "isCageFanOn" : cageFanAuto,
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
+            #update data
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus) 
+            db.child("FarmCycle").child("CoolingSystemCage").update(FanAuto)
+            #push data to history
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Fan").push(FanAutoStatus)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManualStatus)
             GPIO.output(relayFan, GPIO.LOW)  
             print("The Cage fan is turned on")
+
         elif cageFanManual == False:
             CageFanManualStatus = False
-            data = {
+            cageFanManual = ""
+            FanManualStatus = {
             "status" : CageFanManualStatus,
-            "time" : delaaay
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(data)   
-            GPIO.output(relayFan, GPIO.HIGH)
-            print("The Cage fan is turned off")
-            cageFanManual = "" #set manual feed to false by updating firebase
-            data = {
+            "time" : combinedString
+            }   
+            FanManual = {
             "isManualFanOnCage" : cageFanManual
             }
-            db.child("FarmCycle").child("CoolingSystemCage").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus)
+            db.child("FarmCycle").child("CoolingSystemCage").update(FanManual)
+            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManual)
+            
+            GPIO.output(relayFan, GPIO.HIGH)
+            print("The Cage fan is turned off")
         else:
             print("waitingCageFan")
-    #Cage Fan Manuals
+#Cage Fan Manuals
     except:
         print("connectingCageFan")
         restart()

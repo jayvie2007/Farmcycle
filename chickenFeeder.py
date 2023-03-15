@@ -24,6 +24,7 @@ GPIO.setup(relayChickenFeederOpen, GPIO.OUT)
 GPIO.setup(relayChickenFeederClose, GPIO.OUT)
 GPIO.output(relayChickenFeederOpen, GPIO.OUT)
 GPIO.output(relayChickenFeederClose, GPIO.OUT)
+
 #FIREBASE
 config = {
     "apiKey": "AIzaSyDeWWny9C3G9T7s4bUqaJROstQzKeEsfwA",
@@ -39,63 +40,83 @@ config = {
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 #FIREBASE
+
 while True:
     try:
-        request = requests.get(url, timeout = timeout)
+        timetoday = datetime.now().strftime('%x') #date today
+        delaaay = datetime.now().strftime('%H:%M %p') #call real-time hour
+        request = requests.get(url, timeout = timeout) #check if there is connection
+        combinedString = timetoday + " " + delaaay
+
+#Calling data from the firebase then convert it to array   
         feedChicken = db.child("FarmCycle").child("FeedChicken").get("")
-        daysChicken = db.child("FarmCycle").child("DaysChicken").get("")
         chickenData = feedChicken.val()
-        daysChickenData = daysChicken.val()
-        delaaay = datetime.now().strftime('%H:%M %p')
-        delaaay2 = datetime.now().strftime('%I:%M %p')
         chickenOutput = [chickenData[j] for j in chickenData]
+
+        daysChicken = db.child("FarmCycle").child("DaysChicken").get("")
+        daysChickenData = daysChicken.val()
         daysChickenOutput = [daysChickenData[j] for j in daysChickenData]
+        
         FirstFeedTime = chickenOutput[0]
         ManualFeed = chickenOutput[1]
         SecondFeedTime = chickenOutput[2]
+
         chickenAge = daysChickenOutput[0]
+ #Calling data from the firebase then convert it to array          
         
+ #Manual Feeder       
         if ManualFeed == True:
-            ManualFeed = False #set manual feed to false by updating firebase
+            ManualFeed = False
+            status = True
             data = {
             "ManualFeed" : ManualFeed
             }
-            db.child("FarmCycle").child("FeedChicken").update(data)
-            status = True
-            data = {
-            "time" : delaaay2,
+            mFeed = {
+            "time" : combinedString,
             "status" : status
             }
-            db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Manual Feed").update(data)
+            db.child("FarmCycle").child("FeedChicken").update(data)
+            db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Manual Feed").update(mFeed)
+            db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Manual Feed").push(mFeed)
+            
             GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
             GPIO.output(relayChickenFeederClose, GPIO.LOW)
             print("chicken feeding is on")
             time.sleep(3)   
             GPIO.output(relayChickenFeederOpen, GPIO.LOW)
             GPIO.output(relayChickenFeederClose, GPIO.HIGH)
-            status = False
-            data = {
-            "time" : delaaay2,
-            "status" : status
-            }
-            db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Manual Feed").update(data)
             time.sleep(6)
             print("chicken feeding is off")
+
+            status = False
+            mFeed = {
+            "time" : combinedString,
+            "status" : status
+            }
+            db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Manual Feed").update(mFeed)
+            db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Manual Feed").push(mFeed)
+#Manual Feeder
+
+#Auto Feeder            
         elif FirstFeedTime == delaaay:
             if chickenAge <=14:
                 status = False
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                #db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+            
             elif chickenAge <=15:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 15")
@@ -104,13 +125,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 15")
                 time.sleep(60)
+
             elif chickenAge <=18:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 18")
@@ -122,13 +146,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 18")
                 time.sleep(60)
+
             elif chickenAge <=21:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 21")
@@ -140,13 +167,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 21")
                 time.sleep(60)
+
             elif chickenAge <=24:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+            
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 24")
@@ -158,13 +188,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 24")
                 time.sleep(60)
+
             elif chickenAge <=27:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 27")
@@ -176,13 +209,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 27")
                 time.sleep(60)
+                
             elif chickenAge <=30:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 30")
@@ -194,13 +230,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 30")
                 time.sleep(60)
+
             elif chickenAge <=33:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 33")
@@ -212,13 +251,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 33")
                 time.sleep(60)
+
             elif chickenAge <=36:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 33")
@@ -230,13 +272,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 33")
                 time.sleep(60)
+
             elif chickenAge <=36:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 36")
@@ -248,13 +293,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 36")
                 time.sleep(60)
+
             elif chickenAge <=39:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 39")
@@ -266,13 +314,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 39")
                 time.sleep(60)
+
             elif chickenAge <= 42:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 42")
@@ -284,13 +335,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 42")
                 time.sleep(60)
+
             elif chickenAge >=43:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 36")
@@ -302,21 +356,26 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 36")
                 time.sleep(60)
+
         elif SecondFeedTime == delaaay:
             if chickenAge <=14:
                 status = False
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                #db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+            
             elif chickenAge <=15:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 15")
@@ -325,13 +384,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 15")
                 time.sleep(60)
+
             elif chickenAge <=18:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 18")
@@ -343,13 +405,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 18")
                 time.sleep(60)
+
             elif chickenAge <=21:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 21")
@@ -361,13 +426,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 21")
                 time.sleep(60)
+
             elif chickenAge <=24:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+               
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 24")
@@ -379,13 +447,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 24")
                 time.sleep(60)
+
             elif chickenAge <=27:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 27")
@@ -397,13 +468,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 27")
                 time.sleep(60)
+
             elif chickenAge <=30:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 30")
@@ -415,13 +489,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 30")
                 time.sleep(60)
+
             elif chickenAge <=33:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 33")
@@ -433,13 +510,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 33")
                 time.sleep(60)
+
             elif chickenAge <=36:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 33")
@@ -451,13 +531,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 33")
                 time.sleep(60)
+
             elif chickenAge <=36:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 36")
@@ -469,13 +552,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 36")
                 time.sleep(60)
+
             elif chickenAge <=39:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 39")
@@ -487,13 +573,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 39")
                 time.sleep(60)
+
             elif chickenAge <= 42:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 42")
@@ -505,13 +594,16 @@ while True:
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 42")
                 time.sleep(60)
+
             elif chickenAge >=43:
                 status = True
                 data = {
-                "time" : delaaay2,
+                "time" : combinedString,
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
+                db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+
                 GPIO.output(relayChickenFeederOpen, GPIO.HIGH)
                 GPIO.output(relayChickenFeederClose, GPIO.LOW)
                 print("chicken feeding is on age 43")
@@ -522,10 +614,11 @@ while True:
                 GPIO.output(relayChickenFeederOpen, GPIO.LOW)
                 GPIO.output(relayChickenFeederClose, GPIO.HIGH)
                 print("chicken feeding is off age 43")
-                time.sleep(60)
+                time.sleep(60)         
         else:
             print("waitingChickenFeeder")
             time.sleep(1)
+#Auto Feeder 
     except:
         print("connectingChickenFeeder")
         restart()
