@@ -9,6 +9,7 @@ import requests
 
 url = "https://www.google.com"
 timeout = 5
+push = 1
 
 relayFishFeederOpen = 16 #orange
 relayFishFeederClose = 20 #red
@@ -84,7 +85,8 @@ while True:
             GPIO.output(relayFishFeederOpen, GPIO.LOW)
             time.sleep(6)
             print("Fish feeder is closing")
-                    
+            
+            push = 1
             status = False
             mFeed = {
             "time" : combinedString,
@@ -103,7 +105,9 @@ while True:
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish First Feeding").update(data)
-                #db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish First Feeding").push(data)
+                if push == 1:
+                    push = 0
+                db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish First Feeding").push(data)
             
             elif fishQuantity <=5:
                 status = True
@@ -148,7 +152,9 @@ while True:
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Fish").child("Fish Second Feeding").update(data)
-                #db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Second Feeding").push(data)
+                if push == 1:
+                    push = 0
+                    db.child("FarmCycle").child("HistoryLog").child("Fish").child("Fish Second Feeding").push(data)
 
             elif fishQuantity <=5:
                 status = True

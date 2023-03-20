@@ -10,6 +10,7 @@ import requests
 
 url = "https://www.google.com"
 timeout = 5
+push = 1
 
 relayChickenFeederOpen = 13 #violet
 relayChickenFeederClose = 26 #blue
@@ -88,6 +89,7 @@ while True:
             time.sleep(6)
             print("chicken feeding is off")
 
+            push = 1
             status = False
             mFeed = {
             "time" : combinedString,
@@ -106,7 +108,9 @@ while True:
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken First Feeding").update(data)
-                #db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
+                if push == 1:
+                    push = 0
+                    db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken First Feeding").push(data)
             
             elif chickenAge <=15:
                 status = True
@@ -365,7 +369,9 @@ while True:
                 "status" : status
                 }
                 db.child("FarmCycle").child("ActivityLog").child("Chicken").child("Chicken Second Feeding").update(data)
-                #db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
+                if push == 1:
+                    push = 0
+                    db.child("FarmCycle").child("HistoryLog").child("Chicken").child("Chicken Second Feeding").push(data)
             
             elif chickenAge <=15:
                 status = True

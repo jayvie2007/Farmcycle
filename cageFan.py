@@ -10,6 +10,7 @@ relayFan = 15 #gray 2nd extension
 
 url = "https://www.google.com"
 timeout = 5
+push = 1
 
 #Error Occur restart
 def restart():
@@ -73,17 +74,13 @@ while True:
             "status" : CageFanAutoStatus,
             "time" : combinedString
             }
-            FanManualStatus = {
-            "status" : CageFanManualStatus,
-            "time" : combinedString
-            }
             db.child("FarmCycle").child("CoolingSystemCage").update(FanManual)
             db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus)
-            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
-            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManualStatus)      
-            
-            if cageTemp <= cageMin:
+                 
+            if push == 1:
+                push = 0
+                db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Fan").push(FanAutoStatus)
+            elif cageTemp <= cageMin:
                 GPIO.output(relayFan, GPIO.HIGH)
                 print("The Cage fan auto is turned off")
             elif cageTemp >= cageMax:
@@ -91,6 +88,7 @@ while True:
                 print("The Cage fan auto is turned on")
 
         elif cageFanAuto == False:
+            push = 1
             CageFanAutoStatus = False
             cageFanAuto = ""
             FanAuto = {
@@ -122,17 +120,18 @@ while True:
             FanAuto = {
             "isCageFanOn" : cageFanAuto,
             }
-            #update data
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Cage Fan").update(FanAutoStatus)
             db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus) 
             db.child("FarmCycle").child("CoolingSystemCage").update(FanAuto)
-            #push data to history
-            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Cage Fan").push(FanAutoStatus)
-            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManualStatus)
+
+            if push == 1:
+                push = 0
+                db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManualStatus)
+            
             GPIO.output(relayFan, GPIO.LOW)  
             print("The Cage fan is turned on")
 
         elif cageFanManual == False:
+            push = 1
             CageFanManualStatus = False
             cageFanManual = ""
             FanManualStatus = {
@@ -142,9 +141,9 @@ while True:
             FanManual = {
             "isManualFanOnCage" : cageFanManual
             }
-            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus)
             db.child("FarmCycle").child("CoolingSystemCage").update(FanManual)
-            #db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManual)
+            db.child("FarmCycle").child("ActivityLog").child("Temp").child("Manual Fan").update(FanManualStatus)
+            db.child("FarmCycle").child("HistoryLog").child("Temp").child("Manual Fan").push(FanManual)
             
             GPIO.output(relayFan, GPIO.HIGH)
             print("The Cage fan is turned off")
